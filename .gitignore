@@ -1,0 +1,48 @@
+# Maven
+target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
+application-local.yml
+application-local.yaml
+application-secret.yml
+application-secret.yaml
+application.yml
+
+# Temporary
+*.tmp
+*.temp
+
+# Maven wrapper jar normally can be committed
+# Do NOT ignore .mvn/
+
+# Test reports / coverage
+coverage/
+jacoco.exec
+
+# Runtime data
+data/
+uploads/

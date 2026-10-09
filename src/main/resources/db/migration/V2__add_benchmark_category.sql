@@ -1,0 +1,2 @@
+ALTER TABLE benchmark
+ADD COLUMN category VARCHAR(64);

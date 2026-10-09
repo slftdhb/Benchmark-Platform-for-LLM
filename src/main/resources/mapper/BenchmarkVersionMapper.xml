@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.benchmark.mapper.BenchmarkVersionMapper">
+
+    <select id="selectByBenchmarkId" 
+            resultType="com.evalforge.benchmark.entity.BenchmarkVersion">
+        
+    SELECT *
+    FROM benchmark_version
+    WHERE benchmark_id =#{benchmarkId}
+    ORDER BY version_no DESC;
+
+    </select>
+
+    <select id="selectById" resultType="com.evalforge.benchmark.entity.BenchmarkVersion">
+        SELECT * FROM benchmark_version WHERE id = #{id};
+    </select>
+
+    <insert id="insert" 
+            parameterType="com.evalforge.benchmark.entity.BenchmarkVersion" 
+            useGeneratedKeys="true"
+            keyProperty="id">
+
+        INSERT INTO benchmark_version (benchmark_id, version_no, status)
+        VALUES (#{benchmarkId}, #{versionNo}, #{status})
+    </insert>
+
+    <update id="updateDraftNotes" 
+            >
+        UPDATE benchmark_version
+        SET notes= #{request.notes}
+        WHERE id = #{id}
+            AND status = 'DRAFT';
+    </update>
+
+    <update id="publishVersion">
+    UPDATE benchmark_version
+        SET status = 'PUBLISHED',
+            published_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+            AND status = 'DRAFT';
+    </update>
+
+    <select id="countDraftByBenchmarkId" resultType="int">
+    SELECT COUNT(*)
+    FROM benchmark_version
+    WHERE benchmark_id = #{benchmarkId}
+        AND status = 'DRAFT';
+    </select>
+
+    <select id="selectMaxVersionNoByBenchmarkId" resultType="int">
+        SELECT MAX(version_no)
+        FROM benchmark_version
+        WHERE benchmark_id = #{benchmarkId};
+    </select>
+
+</mapper>

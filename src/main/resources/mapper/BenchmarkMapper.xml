@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.benchmark.mapper.BenchmarkMapper"> 
+
+    <select id="selectById" 
+            resultType="com.evalforge.benchmark.dto.BenchmarkResponse" >
+
+    SELECT
+        id,
+        name,
+        description,
+        status,
+        created_at,
+        updated_at,
+        category
+        FROM benchmark
+        WHERE id = #{id}
+
+    </select>
+
+    <insert id="insert" 
+            parameterType="com.evalforge.benchmark.entity.Benchmark"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO benchmark (name,description,status,category)
+        VALUES (#{name},#{description},#{status},#{category})
+    </insert>
+
+    <select id="selectAll" resultType="com.evalforge.benchmark.entity.Benchmark">
+        SELECT * FROM benchmark;
+    </select>
+
+    <select id ="list" resultType="com.evalforge.benchmark.dto.BenchmarkResponse">
+        SELECT
+            id,
+            name,
+            description,
+            status,
+            created_at,
+            updated_at,
+            category
+        FROM benchmark;
+    </select>
+
+    <update id="update">
+    UPDATE benchmark
+    SET name = #{request.name},
+        description = #{request.description},
+        status = #{request.status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="archive" parameterType="Long">
+        UPDATE benchmark
+        SET status = 'ARCHIVED'
+        WHERE id = #{id}
+    </delete>
+
+    <select id="selectPage" resultType="com.evalforge.benchmark.dto.BenchmarkResponse">
+        SELECT
+            id,name,description,status,created_at,updated_at,category
+            FROM benchmark
+            ORDER BY created_at DESC,id DESC
+            LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="Long">
+        SELECT COUNT(*) FROM benchmark;
+    </select>
+
+
+
+</mapper>
