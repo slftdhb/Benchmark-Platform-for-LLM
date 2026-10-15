@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.benchmark.mapper.BenchmarkSampleImportMapper">
+
+    <insert id="insertBatch" >
+    INSERT INTO benchmark_sample (version_id,sample_key,input_json,gold_json,metadata_json,line_no)
+    VALUES
+        <foreach collection="batch" item="item" separator=",">
+                (
+                    #{item.versionId},
+                    #{item.sampleKey},
+                    #{item.inputJson},
+                    #{item.goldJson},
+                    #{item.metadataJson},
+                    #{item.lineNo}
+                )
+        </foreach>
+    </insert>
+
+    <insert id="insertLine" >
+        INSERT INTO benchmark_sample (version_id,sample_key,input_json,gold_json,metadata_json,line_no)
+        VALUES(
+            #{sample.versionId},
+            #{sample.sampleKey},
+            #{sample.inputJson},   
+            #{sample.goldJson},
+            #{sample.metadataJson},
+            #{sample.lineNo}
+        )
+    </insert>
+
+    <select id="selectPage" resultType="com.evalforge.benchmark.entity.BenchmarkSample">
+            SELECT id,version_id,sample_key,input_json,gold_json,metadata_json,line_no,created_at
+            FROM benchmark_sample
+            WHERE version_id = #{versionId}
+            ORDER BY line_no ASC,id ASC
+            LIMIT #{size} offset #{offset}
+    </select>
+
+    <select id="countByVersionId" resultType="long">
+        SELECT count(*)
+        FROM benchmark_sample
+        WHERE version_id = #{versionId}
+    </select>
+
+</mapper>

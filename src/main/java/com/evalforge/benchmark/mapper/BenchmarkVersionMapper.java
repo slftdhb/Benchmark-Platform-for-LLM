@@ -26,4 +26,6 @@ public interface BenchmarkVersionMapper{
     int updateDraftNotes(@Param("id") Long id, @Param("request") UpdateBenchmarkVersionRequest UpdateBenchmarkVersionRequest);
 
     int publishVersion(Long id);
+
+    int updateImportResult(@Param("versionId") Long versionId, @Param("sampleCount") int sampleCount, @Param("contentHash") String contentHash);
 }

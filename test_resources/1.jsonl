@@ -1,0 +1,3 @@
+{"sample_key":"q001","input":{"question":"2+2=?"},"gold":{"answer":"4"}}
+{"sample_key":"q002","input":{"question":"3+3=?"},"gold":{"answer":"6"}}
+{"sample_key":"q003","input":{"question":"5+5=?"},"gold":{"answer":"10"}}

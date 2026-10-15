@@ -41,7 +41,9 @@
         SET status = 'PUBLISHED',
             published_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
-            AND status = 'DRAFT';
+            AND status = 'DRAFT' 
+            AND sample_count > 0
+            AND content_hash IS NOT NULL ;
     </update>
 
     <select id="countDraftByBenchmarkId" resultType="int">
@@ -56,5 +58,13 @@
         FROM benchmark_version
         WHERE benchmark_id = #{benchmarkId};
     </select>
+
+    <update id="updateImportResult">
+        UPDATE benchmark_version
+        SET sample_count = #{sampleCount},
+            content_hash = #{contentHash}
+        WHERE id = #{versionId} AND status = 'DRAFT';
+
+    </update>
 
 </mapper>
