@@ -1,59 +1,80 @@
-package com.evalforge.exceptionhandle;
+package com.evalforge.common.exception;
 
-import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
+
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 
-import com.evalforge.benchmark.exception.BenchmarkImportException;
-import com.evalforge.benchmark.exception.BenchmarkVersionNotFoundException;
-import com.evalforge.exception.ModelEndpointNotFoundException;
+
+import com.evalforge.common.error.ApiError;
+import com.evalforge.common.error.BusinessException;
+import com.evalforge.common.error.ErrorCode;
+
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler{
+    private static final Logger log =LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(ModelEndpointNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-
-    public Map<String,Object> handleNotFound(ModelEndpointNotFoundException ex){
-
-        return Map.of(
-                    "status", 404 ,
-                    "error", "Not Found",
-                    "message",  ex.getMessage()
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiError> handleBusiness(
+        BusinessException ex,
+        HttpServletRequest request
+    ){
+        ErrorCode code =ex.getErrorCode();
+        ApiError body =new ApiError(
+            code.name(),
+            ex.getMessage(),
+            requestId(request),
+            Instant.now(),
+            ex.getDetails()
         );
+
+        log.warn("Business request failed,code={},details={},message={}",
+                 ex.getErrorCode(),
+                 ex.getDetails(),
+                 ex.getMessage()
+        );
+
+        return ResponseEntity.status(code.getStatus()).body(body);
+
+    }
+    
+    @ExceptionHandler (MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ){
+            Map<String,Object> details = new HashMap<>();
+            ex.getBindingResult().getFieldErrors().forEach(error->{
+                    details.put(error.getField(),
+                                error.getDefaultMessage());
+            });
+
+            ApiError body = new ApiError(
+                ErrorCode.VALIDATION_FAILED.name(),
+                "Request Valid failed",
+                requestId(request),
+                Instant.now(),
+                details
+            );
+
+            return ResponseEntity.badRequest().body(body);
     }
 
-    @ExceptionHandler(BenchmarkImportException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String,Object> handleBenchmarkImportException(BenchmarkImportException ex){
-        return Map.of(
-                    "status",400,
-                    "error","Import Error",
-                    "lineNo",ex.getLineNo(),
-                    "message",ex.getMessage()
-        );
+
+    private String requestId(HttpServletRequest request){
+        Object value = request.getAttribute("requestId");
+
+        return value instanceof String  id ? id : "unknown";
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String,Object> handleIllegalArgumentException(IllegalArgumentException ex){
-
-        return Map.of(
-                    "status",400,
-                    "error","Bad Request",  
-                    "message",ex.getMessage()
-        );
-    }
-
-    @ExceptionHandler(BenchmarkVersionNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String,Object> handleBenchmarkVersionNotFoundException(BenchmarkVersionNotFoundException ex){
-        return Map.of(
-                    "status",404,
-                    "error","Not Found",
-                    "message",ex.getMessage()
-        );
-    }
 }

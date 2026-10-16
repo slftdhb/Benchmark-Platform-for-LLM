@@ -1,13 +1,18 @@
 package com.evalforge.benchmark.service;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
+
 import com.evalforge.benchmark.entity.Benchmark;
 import com.evalforge.benchmark.entity.BenchmarkVersion;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.evalforge.benchmark.mapper.BenchmarkMapper;
 import com.evalforge.benchmark.mapper.BenchmarkVersionMapper;
+import com.evalforge.common.error.BusinessException;
+import com.evalforge.common.error.ErrorCode;
 import com.evalforge.benchmark.dto.CreateBenchmarkRequest;
 import com.evalforge.benchmark.dto.UpdateBenchmarkRequest;
 import com.evalforge.benchmark.dto.BenchmarkResponse;
@@ -22,6 +27,7 @@ public class BenchmarkService {
     private final BenchmarkMapper benchmarkMapper;
     private final BenchmarkVersionMapper versionMapper;
 
+
     //构造器注入
     public BenchmarkService(BenchmarkMapper benchmarkMapper, BenchmarkVersionMapper versionMapper){
         this.benchmarkMapper = benchmarkMapper;
@@ -35,7 +41,11 @@ public class BenchmarkService {
         benchmark.setStatus("ACTIVE");
         benchmark.setDescription(request.description());
 
-        benchmarkMapper.insert(benchmark);
+        try{
+            benchmarkMapper.insert(benchmark);
+        }catch(DuplicateKeyException ex){
+            throw new BusinessException(ErrorCode.DUPLICATE_RESOURCE, "Benchmark name hash been existed : "+request.name(),Map.of("name",request.name()),ex);
+        }
 
         //利用mybatis回填的id进行版本初始化和插入
         BenchmarkVersion version =new BenchmarkVersion();
@@ -52,10 +62,10 @@ public class BenchmarkService {
     public PageResponse<BenchmarkResponse> list(int page, int size){   
         //参数校验
         if(page < 1){
-            throw new IllegalArgumentException("Page number must be greater than 0");
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Page number must be greater than 0");
         }
         if(size < 1 || size > 100){
-            throw new IllegalArgumentException("Size must be between 1 and 100");
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Size must be between 1 and 100");
         }
         //计算偏移量
         long offset = (page -1 ) * size; 
@@ -85,7 +95,7 @@ public class BenchmarkService {
 
             for(BenchmarkResponse benchmark : allbenchmarks){
                 if(benchmark.name().equals(request.name()) && !benchmark.id().equals(id)){
-                    throw new RuntimeException("Benchmark name already exists");
+                    throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT, "Benchmark name already exists");
                 }
             }
 

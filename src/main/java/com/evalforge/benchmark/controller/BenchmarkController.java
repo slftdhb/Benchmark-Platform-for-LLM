@@ -17,9 +17,18 @@ import com.evalforge.benchmark.dto.CreateBenchmarkRequest;
 import com.evalforge.benchmark.dto.UpdateBenchmarkRequest;
 import com.evalforge.benchmark.dto.BenchmarkResponse;
 import com.evalforge.benchmark.service.BenchmarkService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.List;
 import com.evalforge.benchmark.dto.PageResponse;
 
+@Tag (
+    name = "Benchmark Management",
+    description = "Manage benchmark datasets and some operation of benchmark"
+)
 
 @RestController
 @RequestMapping("/api/v1/benchmarks")
@@ -31,29 +40,43 @@ public class BenchmarkController{
         public BenchmarkController(BenchmarkService benchmarkService) {
             this.benchmarkService = benchmarkService;
         }
-
+        @Operation(
+            summary = "Create a benchmark",
+            description = "Upload a json to create a benchmark"
+        )
         //创建benchmark
         @PostMapping
         public Long create(@Valid @RequestBody CreateBenchmarkRequest request){
             return benchmarkService.create(request);
         }
 
-
+        @Operation(
+            summary = "qurey by page",
+            description = "Get all Benchmarks by page and size"
+        )
         //分页查询
         @GetMapping
         public PageResponse<BenchmarkResponse> list(@RequestParam(defaultValue = "1") int page ,@RequestParam(defaultValue = "10") int size){
             return benchmarkService.list(page,size);
         }
 
+        @Operation(
+            summary = "Get Benchmark by ID",
+            description = "return benchmark details "
+        )
         //查详情
         @GetMapping("/{id}")
-        public BenchmarkResponse getById(@PathVariable("id") Long id){
+        public BenchmarkResponse getById(@Parameter(description = "Bechmark ID") @PathVariable("id") Long id){
             return benchmarkService.getById(id);
         }
 
+        @Operation(
+            summary = "modify a benchamrk",
+            description = "Modify a benchmark by Benchmark ID and upload a JSON"
+        )
         //修改信息
         @PutMapping("/{id}")
-        public int update(@PathVariable("id") Long id, @Valid @RequestBody UpdateBenchmarkRequest request){
+        public int update(@Parameter(description = "Benchmark ID") @PathVariable("id") Long id, @Valid @RequestBody UpdateBenchmarkRequest request){
             return benchmarkService.update(id, request);
         }
 

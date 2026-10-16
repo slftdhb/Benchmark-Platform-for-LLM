@@ -2,6 +2,8 @@ package com.evalforge.benchmark.service;
 
 import com.evalforge.benchmark.exception.BenchmarkVersionNotFoundException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +11,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.evalforge.benchmark.mapper.BenchmarkSampleImportMapper;
 import com.evalforge.benchmark.mapper.BenchmarkVersionMapper;
+import com.evalforge.common.error.BusinessException;
+import com.evalforge.common.error.ErrorCode;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -44,6 +48,8 @@ public class BenchmarkImportService {
     private final BenchmarkSampleImportMapper sampleMapper;
     private final ObjectMapper objectMapper;
 
+    private static final Logger log =LoggerFactory.getLogger(BenchmarkImportService.class);
+
     //依赖注入
     public BenchmarkImportService(BenchmarkVersionMapper versionMapper, BenchmarkSampleImportMapper sampleMapper,ObjectMapper objectMapper){
         this.versionMapper = versionMapper;
@@ -55,6 +61,10 @@ public class BenchmarkImportService {
     @Transactional
     public BenchmarkImportResponse importJsonl(Long versionId,MultipartFile file){
 
+        log.info(
+                "Starting benchmark sample import ,versionId={}",
+                versionId
+        );
 
         // 1. 查询版本并确认版本存在    
         BenchmarkVersion version = versionMapper.selectById(versionId);
@@ -63,12 +73,12 @@ public class BenchmarkImportService {
         }
         // 2. 确认版本为 DRAFT
         if(!BenchmarkVersionStatus.DRAFT.getValue().equals(version.getStatus())) {
-            throw new IllegalArgumentException("Benchmark version is not in DRAFT status");
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Benchmark version is not in DRAFT status");
         }
 
         // 3. 确认文件不为空
         if(file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File cannot be null or empty");
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "File cannot be null or empty");
         }
 
         //初始化SHA256
@@ -107,7 +117,7 @@ public class BenchmarkImportService {
                 try{
                     dto = parser.parse(line);
                 }catch(Exception e){
-                    throw new BenchmarkImportException(lineNo,"invalid Json"+ e.getMessage());
+                    throw new BenchmarkImportException(ErrorCode.VALIDATION_FAILED,lineNo,"invalid Json"+ e.getMessage(),e);
                 }
 
                 validator.validate(dto, lineNo);
@@ -124,7 +134,7 @@ public class BenchmarkImportService {
                 }
                                 sampleCount++;
                 }catch(DuplicateKeyException ex){
-                                throw new BenchmarkImportException(lineNo,"Duplicate key :"+sample.getSampleKey(),ex);
+                                throw new BenchmarkImportException(ErrorCode.DUPLICATE_RESOURCE,lineNo,"Duplicate key :"+sample.getSampleKey(),ex);
                 }
 
                 //这是批量插入的改进方法
@@ -153,8 +163,14 @@ public class BenchmarkImportService {
                 );
                 
                 if(affectedRows != 1){
-                        throw new IllegalStateException("Version status changed during import");
-                }
+                        throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT, "Version status changed during import");
+                }  
+
+                log.info(
+                    "Benchmark sample import completed ,versionId={},count={}",
+                    versionId,
+                    sampleCount
+                );
 
 
                 return new BenchmarkImportResponse(
@@ -176,10 +192,10 @@ public class BenchmarkImportService {
     public PageResponse<BenchmarkSampleResponse> listSamples(Long versionId,int page,int size){
         //参数校验
         if(page < 1){
-            throw new IllegalArgumentException("Page number must be greater than 0");
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Page number must be greater than 0");
         }
         if(size < 1 || size > 100){
-            throw new IllegalArgumentException("Size must be between 1 and 100");
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Size must be between 1 and 100");
         }
 
         int offset =(page-1) * size;

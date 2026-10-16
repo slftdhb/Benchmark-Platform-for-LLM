@@ -5,6 +5,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import com.evalforge.benchmark.dto.UpdateBenchmarkVersionRequest;
 import com.evalforge.benchmark.mapper.BenchmarkVersionMapper;
+import com.evalforge.common.error.BusinessException;
+import com.evalforge.common.error.ErrorCode;
 import com.evalforge.benchmark.mapper.BenchmarkMapper;
 import com.evalforge.benchmark.entity.Benchmark;
 import com.evalforge.benchmark.dto.BenchmarkResponse;
@@ -29,17 +31,17 @@ public class BenchmarkVersionService {
         public Long createDraftVersion(Long id){
                 //根据返回的结果检查有没有这个benchmark
                 BenchmarkResponse existBenchmark = benchmarkMapper.selectById(id).orElseThrow(()->{
-                        return new RuntimeException("Benchmark not found");
+                        throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Benchmark not found");
                 });
 
                 if ("ARCHIVED".equals(existBenchmark.status())) {
-                        throw new RuntimeException("Benchmark is archived");
+                        throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT, "Benchmark is archived");
                 }    
 
                 //检查是否已经有DRAFT存在
                 int draftCount = benchmarkVersionMapper.countDraftByBenchmarkId(id);
                 if (draftCount > 0) {
-                        throw new RuntimeException("A draft version already exists for this benchmark");
+                        throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT, "A draft version already exists for this benchmark");
                 }
 
                 //这里查询最大版本号
@@ -63,11 +65,11 @@ public class BenchmarkVersionService {
                 BenchmarkVersion existingVersion = benchmarkVersionMapper.selectById(id);
 
                 if (existingVersion == null) {
-                        throw new RuntimeException("Version not found");
+                        throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND,"Version not found");
                 }
 
                 if ("PUBLISHED".equals(existingVersion.getStatus())) {
-                        throw new RuntimeException("Cannot update a published version");
+                        throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT, "Cannot update a published version");
                 }
                 
                 return benchmarkVersionMapper.updateDraftNotes(id, updateBenchmarkVersionRequest);
@@ -80,7 +82,7 @@ public class BenchmarkVersionService {
                 int affected = benchmarkVersionMapper.publishVersion(id);
                 
                 if(affected != 1){
-                    throw new IllegalStateException("version has been published or not exsit");
+                   throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT,"Benchmark version cannot be published");
                 }
         }
 
