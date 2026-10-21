@@ -1,5 +1,9 @@
 package com.evalforge.dto;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.JsonNodeException;
+
 public record ModelEndpointResponse(
         Long id,
         Boolean enabled,
@@ -7,4 +11,7 @@ public record ModelEndpointResponse(
         String provider,
         String model_name,
         String base_url
-) {}
+) {
+
+
+}
