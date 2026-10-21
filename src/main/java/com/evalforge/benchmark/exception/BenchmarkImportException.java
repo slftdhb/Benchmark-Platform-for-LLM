@@ -17,7 +17,6 @@ public class BenchmarkImportException extends BusinessException{
     //用于保留数据库的原始异常
     public BenchmarkImportException(int lineNo,String message,Throwable cause){
             super(ErrorCode.BENCHMARK_IMPORT_INVALID,message,Map.of("lineNo",lineNo),cause);
-
             this.lineNo=lineNo;
     }
     public BenchmarkImportException(ErrorCode errorCode,int lineNo, String message){
