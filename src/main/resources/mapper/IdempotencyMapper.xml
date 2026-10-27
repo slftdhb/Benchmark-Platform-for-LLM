@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.idempotency.IdempotencyMapper">
+        <resultMap id="idempotencyRecordMap"
+               type="com.evalforge.idempotency.IdempotencyRecord">
+        <constructor>
+            <idArg column="id"
+                   javaType="java.lang.Long"/>
+            <arg column="operation"
+                 javaType="java.lang.String"/>
+            <arg column="idempotency_key"
+                 javaType="java.lang.String"/>
+            <arg column="request_hash"
+                 javaType="java.lang.String"/>
+            <arg column="resource_id"
+                 javaType="java.lang.Long"/>
+            <arg column="status"
+                 javaType="java.lang.String"/>
+            <arg column="created_at"
+                 javaType="java.time.LocalDateTime"/>
+        </constructor>
+        </resultMap>
+
+
+        <insert id="insertProcessing" >
+                INSERT INTO idempotency_record
+                    (operation, idempotency_key,request_hash,status)
+                    VALUES
+                    (#{record.operation},#{record.idempotencyKey},#{record.requestHash},
+                    'PROCESSING');
+        </insert>
+
+        <select id="selectForUpdate" 
+                resultType="com.evalforge.idempotency.IdempotencyRecord">
+                SELECT * FROM idempotency_record
+                WHERE operation = #{operation}
+                        AND idempotency_key = #{idempotencyKey}
+                FOR UPDATE;
+        </select>
+
+        <update id="markSucceeded">
+                UPDATE idempotency_record
+                    SET status = 'SUCCEED',
+                    resource_id = #{resourceId}
+                    WHERE operation = #{operation}
+                    AND idempotency_key = #{idempotencyKey}
+                    AND status = 'PROCESSING';
+
+        </update>
+</mapper>
