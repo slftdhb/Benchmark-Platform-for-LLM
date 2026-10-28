@@ -9,14 +9,21 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.evalforge.benchmark.dto.CreateBenchmarkRequest;
 import com.evalforge.benchmark.dto.UpdateBenchmarkRequest;
 import com.evalforge.benchmark.dto.BenchmarkResponse;
+import com.evalforge.benchmark.service.BenchmarkCreateFacade;
 import com.evalforge.benchmark.service.BenchmarkService;
+import com.evalforge.idempotency.IdempotencyService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,9 +43,15 @@ public class BenchmarkController{
 
         private final BenchmarkService benchmarkService;
 
+        private final IdempotencyService idempotencyService;
+
+        private final BenchmarkCreateFacade benchmarkCreateFacade;
+
         //构造器依赖注入
-        public BenchmarkController(BenchmarkService benchmarkService) {
+        public BenchmarkController(BenchmarkService benchmarkService, IdempotencyService idempotencyService,BenchmarkCreateFacade benchmarkCreateFacade) {
             this.benchmarkService = benchmarkService;
+            this.idempotencyService=idempotencyService;
+            this.benchmarkCreateFacade=benchmarkCreateFacade;
         }
         @Operation(
             summary = "Create a benchmark",
@@ -46,8 +59,11 @@ public class BenchmarkController{
         )
         //创建benchmark
         @PostMapping
-        public Long create(@Valid @RequestBody CreateBenchmarkRequest request){
-            return benchmarkService.create(request);
+        public Long create(@Valid @RequestBody CreateBenchmarkRequest request, @Size (min = 1 ,max =128) @NotBlank  @RequestHeader("Idempotency-Key") String idempotencyKey){
+            return benchmarkCreateFacade.crateBenchmarkWithRedisCache(
+                    request,
+                    idempotencyKey
+            );
         }
 
         @Operation(

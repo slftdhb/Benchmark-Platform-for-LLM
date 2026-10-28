@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import com.evalforge.entity.ModelEndpoint;
+import com.evalforge.ratelimit.ModelRateLimitException;
+import com.evalforge.ratelimit.RateLimitResult;
+import com.evalforge.ratelimit.RedisModelRateLimiter;
 import com.evalforge.service.ModelEndpointService;
 import java.util.List;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +20,7 @@ import com.evalforge.dto.ModelEndpointResponse;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.apache.catalina.filters.RateLimitFilter;
 import org.springframework.http.HttpStatus;
 
 @RestController
@@ -26,8 +30,22 @@ public class ModelEndpointController {
     //依赖注入阶段的构造器注入
     private final ModelEndpointService service;
 
-    public ModelEndpointController(ModelEndpointService service) {
+    private final RedisModelRateLimiter limiter;
+
+    public ModelEndpointController(ModelEndpointService service,RedisModelRateLimiter limiter) {
         this.service = service;
+        this.limiter=limiter;
+    }
+
+    //这是一个固定窗口限流demo接口
+    @PostMapping("/{id}/inference-demo")
+    public boolean getModelInferenceByModelId(@PathVariable("id") long modelId){
+        RateLimitResult result = limiter.acquire(modelId);
+
+        if(!result.allowed()){
+            throw new ModelRateLimitException(modelId, result.retryAfterSeconds());
+        }
+        return result.allowed();
     }
 
     @PostMapping

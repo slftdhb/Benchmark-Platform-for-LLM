@@ -8,7 +8,9 @@ public enum ErrorCode {
             BENCHMARK_IMPORT_INVALID(HttpStatus.BAD_REQUEST),
             BENCHMARK_VERSION_CONFLICT(HttpStatus.CONFLICT),
             DUPLICATE_RESOURCE(HttpStatus.CONFLICT),
-            INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
+            INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
+            IDEMPOTENCY_KEY_CONFLICT(HttpStatus.CONFLICT),
+            MODEL_RETE_LIMITED(HttpStatus.TOO_MANY_REQUESTS);
 
             private final HttpStatus status;
 
