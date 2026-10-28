@@ -13,6 +13,7 @@ import com.evalforge.benchmark.dto.CreateBenchmarkRequest;
 import com.evalforge.benchmark.service.BenchmarkService;
 import com.evalforge.common.error.BusinessException;
 import com.evalforge.common.error.ErrorCode;
+import com.evalforge.common.hasher.BenchmarkCreateRequestHasher;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -22,13 +23,16 @@ public class IdempotencyService {
 
             private final ObjectMapper objectMapper;
             private final BenchmarkService benchmarkService;
+            private final BenchmarkCreateRequestHasher hasher;
 
-            public IdempotencyService(IdempotencyMapper idempotencyMapper,ObjectMapper objectMapper,BenchmarkService benchmarkService){
+            public IdempotencyService(IdempotencyMapper idempotencyMapper,ObjectMapper objectMapper,BenchmarkService benchmarkService,BenchmarkCreateRequestHasher hasher){
                 this.idempotencyMapper=idempotencyMapper;
                 this.objectMapper = objectMapper;
                 this.benchmarkService=benchmarkService;
+                this.hasher=hasher;
             }
 
+            //这里的事务只涉及mysql，redis作为外层事务，未命中缓存时再进入mysql事务
             @Transactional 
             public Long createBenchmark(CreateBenchmarkRequest request,String idempotencyKey){
                 //校验Key，计算hash
@@ -36,8 +40,8 @@ public class IdempotencyService {
                     throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Idempotency-Key must contain 1 to 128 characters");
                 }
 
-                String request_content_hash = calculaterequestHash(request);
-
+                String request_content_hash = hasher.calculateRequestHash(request);
+                
                 IdempotencyRecord record = new IdempotencyRecord("CREATE_BENCHMARK", idempotencyKey, request_content_hash);
 
                 try{
@@ -75,21 +79,6 @@ public class IdempotencyService {
                 return resource_id;
             }
 
-
-            private String calculaterequestHash(CreateBenchmarkRequest request){
-                String json = objectMapper.writeValueAsString(new Object[]{
-                                request.name(),
-                                request.description()
-                });
-
-                try{
-                    MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                    byte[] hash =digest.digest(json.getBytes(StandardCharsets.UTF_8));
-                    return HexFormat.of().formatHex(hash);
-                }catch(NoSuchAlgorithmException e){
-                    throw new IllegalStateException("no sha256 algorithm",e);
-                }
-            }
 
     
 }

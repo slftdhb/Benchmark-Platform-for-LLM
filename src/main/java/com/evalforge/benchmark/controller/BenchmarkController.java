@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import com.evalforge.benchmark.dto.CreateBenchmarkRequest;
 import com.evalforge.benchmark.dto.UpdateBenchmarkRequest;
 import com.evalforge.benchmark.dto.BenchmarkResponse;
+import com.evalforge.benchmark.service.BenchmarkCreateFacade;
 import com.evalforge.benchmark.service.BenchmarkService;
 import com.evalforge.idempotency.IdempotencyService;
 
@@ -44,11 +45,13 @@ public class BenchmarkController{
 
         private final IdempotencyService idempotencyService;
 
+        private final BenchmarkCreateFacade benchmarkCreateFacade;
 
         //构造器依赖注入
-        public BenchmarkController(BenchmarkService benchmarkService, IdempotencyService idempotencyService) {
+        public BenchmarkController(BenchmarkService benchmarkService, IdempotencyService idempotencyService,BenchmarkCreateFacade benchmarkCreateFacade) {
             this.benchmarkService = benchmarkService;
             this.idempotencyService=idempotencyService;
+            this.benchmarkCreateFacade=benchmarkCreateFacade;
         }
         @Operation(
             summary = "Create a benchmark",
@@ -57,7 +60,7 @@ public class BenchmarkController{
         //创建benchmark
         @PostMapping
         public Long create(@Valid @RequestBody CreateBenchmarkRequest request, @Size (min = 1 ,max =128) @NotBlank  @RequestHeader("Idempotency-Key") String idempotencyKey){
-            return idempotencyService.createBenchmark(
+            return benchmarkCreateFacade.crateBenchmarkWithRedisCache(
                     request,
                     idempotencyKey
             );

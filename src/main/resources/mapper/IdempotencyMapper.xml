@@ -34,7 +34,7 @@
         </insert>
 
         <select id="selectForUpdate" 
-                resultType="com.evalforge.idempotency.IdempotencyRecord">
+                resultMap="idempotencyRecordMap">
                 SELECT * FROM idempotency_record
                 WHERE operation = #{operation}
                         AND idempotency_key = #{idempotencyKey}
