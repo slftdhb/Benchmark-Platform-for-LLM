@@ -31,14 +31,14 @@ public class BenchmarkCreateFacade {
         }
 
         //先检查缓存
-        public Long crateBenchmarkWithRedisCache(CreateBenchmarkRequest request ,String idempotencyKey){  
+        public Long crateBenchmarkWithRedisCache(Long ownerId,CreateBenchmarkRequest request ,String idempotencyKey){  
             
             String hash =  hasher.calculateRequestHash(request);
             
             IdempotencyCacheEntry cached = null;
 
             try{
-                 cached = redis.get(idempotencyKey);
+                 cached = redis.get(ownerId,idempotencyKey);
             }catch(DataAccessException | JacksonException ex){
                     log.warn("Failed to read idempotency cache ,falling back to mysql ",ex);
             }
@@ -53,11 +53,11 @@ public class BenchmarkCreateFacade {
             }
 
             //未命中缓存，就进入mysql的事务,mysql事务结束后写入缓存
-            Long id =idempotencyService.createBenchmark(request, idempotencyKey);
+            Long id = idempotencyService.createBenchmark(ownerId,request, idempotencyKey);
 
             //mysql完成提交后，redis失败不应该反应为创建事务失败
             try{
-                    redis.put(idempotencyKey,new IdempotencyCacheEntry(hash,id));
+                    redis.put(ownerId,idempotencyKey,new IdempotencyCacheEntry(hash,id));
             }catch(DataAccessException  | JacksonException ex){
                     log.warn("fialed to populate idempotency chache ,resource = {}",id, ex);
             }

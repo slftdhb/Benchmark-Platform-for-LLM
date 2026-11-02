@@ -1,6 +1,7 @@
 package com.evalforge.benchmark.controller;
 
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import com.evalforge.benchmark.dto.BenchmarkImportResponse;
 import com.evalforge.benchmark.dto.BenchmarkSampleResponse;
 import com.evalforge.benchmark.dto.PageResponse;
 import com.evalforge.benchmark.service.BenchmarkImportService;
+import com.evalforge.security.CurrentUser;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,9 +49,11 @@ public class BenchmarkImportController {
                 consumes =  MediaType.MULTIPART_FORM_DATA_VALUE) 
     public BenchmarkImportResponse importSamples(
         @Parameter(description = "A Benchmark version ID") @PathVariable Long versionId,
-        @Parameter(description = "JSONL file") @RequestPart("file") MultipartFile file
+        @Parameter(description = "JSONL file") @RequestPart("file") MultipartFile file,
+        @AuthenticationPrincipal CurrentUser currentUser
     ){
-        return benchmarkImportService.importJsonl(versionId, file);
+        Long userId = currentUser.id();
+        return benchmarkImportService.importJsonl(userId, versionId, file);
     }
 
     @Operation (
@@ -58,8 +62,9 @@ public class BenchmarkImportController {
     )
     //分页查询
     @GetMapping("benchmark-versions/{versionId}/samples")
-    public PageResponse<BenchmarkSampleResponse> listSamples(@PathVariable( "versionId") Long versionId,@RequestParam(defaultValue = "1") int page , @RequestParam(defaultValue = "10") int size){
-        return benchmarkImportService.listSamples(versionId,page,size);
+    public PageResponse<BenchmarkSampleResponse> listSamples(@AuthenticationPrincipal CurrentUser currentUser,@PathVariable( "versionId") Long versionId,@RequestParam(defaultValue = "1") int page , @RequestParam(defaultValue = "10") int size){
+        Long userId = currentUser.id();
+        return benchmarkImportService.listSamples(userId, versionId,page,size);
     }
 
 }

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.user.mapper.UserMapper">
+        <select id="findByUsername" resultType="com.evalforge.user.entity.AppUser">
+                SELECT id,username,password_hash,role,enabled,created_at
+                FROM app_user
+                WHERE username = #{username};
+        </select>
+
+        <select id ="findById" resultType="com.evalforge.user.entity.AppUser">
+                SELECT id,username,password_hash,role,enabled,created_at
+                FROM app_user
+                WHERE id = #{id};
+        </select>
+
+        <insert id ="insert" 
+                parameterType="com.evalforge.user.entity.AppUser"
+                useGeneratedKeys ="true"
+                keyProperty="id">
+                INSERT INTO app_user 
+                    (username,password_hash,role,enabled)
+                VALUES(#{username},#{passwordHash},#{role},#{enabled})
+        </insert>
+</mapper>

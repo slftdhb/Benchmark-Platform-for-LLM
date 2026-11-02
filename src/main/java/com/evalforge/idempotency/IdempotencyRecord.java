@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record IdempotencyRecord(
     Long id,
+    Long userId,
     String operation,
     String idempotencyKey,
     String requestHash,
@@ -12,9 +13,9 @@ public record IdempotencyRecord(
     LocalDateTime createdAt
 ){
     public IdempotencyRecord(Long id){
-        this(id,null,null,null,null,null,null);
+        this(id,null,null,null,null,null,null,null);
     }
-    public IdempotencyRecord(String operation,String idempotencyKey,String requestHash){
-        this(null,operation,idempotencyKey,requestHash,null,null,null);
+    public IdempotencyRecord(Long userId,String operation,String idempotencyKey,String requestHash){
+        this(null,userId,operation,idempotencyKey,requestHash,null,null,null);
     }
 }

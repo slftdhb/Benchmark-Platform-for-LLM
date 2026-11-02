@@ -16,6 +16,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.evalforge.benchmark.dto.CreateBenchmarkRequest;
@@ -24,6 +25,7 @@ import com.evalforge.benchmark.dto.BenchmarkResponse;
 import com.evalforge.benchmark.service.BenchmarkCreateFacade;
 import com.evalforge.benchmark.service.BenchmarkService;
 import com.evalforge.idempotency.IdempotencyService;
+import com.evalforge.security.CurrentUser;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -59,8 +61,12 @@ public class BenchmarkController{
         )
         //创建benchmark
         @PostMapping
-        public Long create(@Valid @RequestBody CreateBenchmarkRequest request, @Size (min = 1 ,max =128) @NotBlank  @RequestHeader("Idempotency-Key") String idempotencyKey){
+        public Long create(@Valid @RequestBody CreateBenchmarkRequest request,
+                             @Size (min = 1 ,max =128) @NotBlank  @RequestHeader("Idempotency-Key") String idempotencyKey,
+                            @AuthenticationPrincipal CurrentUser currentUser){
+            Long currentId = currentUser.id();
             return benchmarkCreateFacade.crateBenchmarkWithRedisCache(
+                    currentId,
                     request,
                     idempotencyKey
             );
@@ -72,8 +78,9 @@ public class BenchmarkController{
         )
         //分页查询
         @GetMapping
-        public PageResponse<BenchmarkResponse> list(@RequestParam(defaultValue = "1") int page ,@RequestParam(defaultValue = "10") int size){
-            return benchmarkService.list(page,size);
+        public PageResponse<BenchmarkResponse> list(@AuthenticationPrincipal CurrentUser currentUser,@RequestParam(defaultValue = "1") int page ,@RequestParam(defaultValue = "10") int size){
+            Long currentId = currentUser.id();
+            return benchmarkService.list(currentId,page,size);
         }
 
         @Operation(
@@ -82,8 +89,9 @@ public class BenchmarkController{
         )
         //查详情
         @GetMapping("/{id}")
-        public BenchmarkResponse getById(@Parameter(description = "Bechmark ID") @PathVariable("id") Long id){
-            return benchmarkService.getById(id);
+        public BenchmarkResponse getById(@AuthenticationPrincipal CurrentUser currentUser ,@Parameter(description = "Bechmark ID") @PathVariable("id") Long id){
+            Long currentId = currentUser.id();
+            return benchmarkService.getById(currentId, id);
         }
 
         @Operation(
@@ -92,22 +100,25 @@ public class BenchmarkController{
         )
         //修改信息
         @PutMapping("/{id}")
-        public int update(@Parameter(description = "Benchmark ID") @PathVariable("id") Long id, @Valid @RequestBody UpdateBenchmarkRequest request){
-            return benchmarkService.update(id, request);
+        public int update(@AuthenticationPrincipal CurrentUser currentUser, @Parameter(description = "Benchmark ID") @PathVariable("id") Long id, @Valid @RequestBody UpdateBenchmarkRequest request){
+            Long currentId = currentUser.id();
+            return benchmarkService.update(currentId, id, request);
         }
 
         @DeleteMapping("/{id}")
         @ResponseStatus(HttpStatus.NO_CONTENT)
-        public void archive(@PathVariable("id") Long id){
+        public void archive(@AuthenticationPrincipal CurrentUser currentUser, @PathVariable("id") Long id){
+            Long currentId = currentUser.id();
             //将benchmark归档而不是物理删除
-            benchmarkService.archive(id);
+            benchmarkService.archive(currentId, id);
             
         }
 
         //查询版本列表
         @GetMapping("/{id}/versions")
-        public List<Integer> listVersions(@PathVariable("id") Long id){
-            return benchmarkService.listVersions(id);
+        public List<Integer> listVersions(@AuthenticationPrincipal CurrentUser currentUser, @PathVariable("id") Long id){
+            Long currentId = currentUser.id();
+            return benchmarkService.listVersions(currentId, id);
         }
 
 }

@@ -15,17 +15,21 @@ public interface BenchmarkMapper{
 
     Optional<BenchmarkResponse> selectById(Long id);
 
-    //这里使用@Param明确说明传递给mybatis的参数名称，再在xml中明确的通过#{id}和#{request.xxx}来引用这些参数,否则mybatis封装参数，导致无法识别
-    int update(@Param("id") Long id , @Param("request") UpdateBenchmarkRequest request);
-    
-    int archive(Long id);
+    Optional<BenchmarkResponse> selectOwnedById(@Param("userId") Long userId,@Param("id")  Long Id);
 
-    Long count();
+    //这里使用@Param明确说明传递给mybatis的参数名称，再在xml中明确的通过#{id}和#{request.xxx}来引用这些参数,否则mybatis封装参数，导致无法识别
+    int update(@Param("userId") Long userId,@Param("id") Long id , @Param("request") UpdateBenchmarkRequest request);
+    
+    int archive(@Param("userId") Long userId,@Param("id") Long id);
+
+    Long count(@Param("userId") Long userId);
 
     List<Benchmark> selectAll();
 
     List<BenchmarkResponse> list();
 
-    List<BenchmarkResponse> selectPage(long offset, int size);
+    List<BenchmarkResponse> selectByUserIdForList(@Param("userId") Long userId);
+
+    List<BenchmarkResponse> selectPage(@Param("userId") Long userId,long offset, int size);
 
 }

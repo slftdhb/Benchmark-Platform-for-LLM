@@ -10,7 +10,11 @@ public enum ErrorCode {
             DUPLICATE_RESOURCE(HttpStatus.CONFLICT),
             INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
             IDEMPOTENCY_KEY_CONFLICT(HttpStatus.CONFLICT),
-            MODEL_RETE_LIMITED(HttpStatus.TOO_MANY_REQUESTS);
+            MODEL_RETE_LIMITED(HttpStatus.TOO_MANY_REQUESTS),
+            TOKEN_INVALID(HttpStatus.UNAUTHORIZED),
+            AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED),
+            ACCESS_DENIED(HttpStatus.FORBIDDEN),
+            ACCOUNT_DISABLED(HttpStatus.FORBIDDEN);
 
             private final HttpStatus status;
 

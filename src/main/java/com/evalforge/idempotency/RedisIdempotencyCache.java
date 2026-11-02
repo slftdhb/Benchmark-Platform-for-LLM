@@ -22,8 +22,8 @@ public class RedisIdempotencyCache {
     }
 
     //拿到redis的结果字符串并转成record
-    public IdempotencyCacheEntry get(String key){
-        String entry =redisTemplate.opsForValue().get(CacheKey.benchmark_create_idempotency_key(key));
+    public IdempotencyCacheEntry get(Long userId,String key){
+        String entry =redisTemplate.opsForValue().get(CacheKey.benchmark_create_idempotency_key(key, userId));
         
         if(entry == null ){
             return null;
@@ -31,16 +31,17 @@ public class RedisIdempotencyCache {
 
         //直接反序列化,同时进行完整性校验
         IdempotencyCacheEntry result =objectMapper.readValue(entry,IdempotencyCacheEntry.class);
-        if(result == null | result.requestHash().isBlank() | result.requestHash() == null | result.resourceId() == null ){
+        if(result == null || result.requestHash() == null || result.resourceId() == null || result.requestHash().isBlank()){
             return null;
         }
+
         return result;
     }
 
-    public void put(String key, IdempotencyCacheEntry entry){
+    public void put(Long userId,String key, IdempotencyCacheEntry entry){
             String redisEntry = objectMapper.writeValueAsString(entry);
             redisTemplate.opsForValue().set(
-                CacheKey.benchmark_create_idempotency_key(key),
+                CacheKey.benchmark_create_idempotency_key(key, userId),
                 redisEntry,
                 Duration.ofMinutes(30)
             );

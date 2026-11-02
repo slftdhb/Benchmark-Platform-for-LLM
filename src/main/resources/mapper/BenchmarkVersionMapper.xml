@@ -11,6 +11,7 @@
     SELECT *
     FROM benchmark_version
     WHERE benchmark_id =#{benchmarkId}
+        AND #{benchmarkId} IN (SELECT id FROM benchmark WHERE owner_id = #{userId})
     ORDER BY version_no DESC;
 
     </select>
@@ -33,7 +34,8 @@
         UPDATE benchmark_version
         SET notes= #{request.notes}
         WHERE id = #{id}
-            AND status = 'DRAFT';
+            AND status = 'DRAFT'
+            AND EXISTS(SELECT 1 FROM benchmark b WHERE b.id = benchmark_version.benchmark_id AND b.owner_id = #{userId});
     </update>
 
     <update id="publishVersion">
@@ -43,7 +45,8 @@
         WHERE id = #{id}
             AND status = 'DRAFT' 
             AND sample_count > 0
-            AND content_hash IS NOT NULL ;
+            AND content_hash IS NOT NULL
+            AND EXISTS(SELECT 1 FROM benchmark b WHERE b.id = benchmark_version.benchmark_id AND b.owner_id = #{userId});
     </update>
 
     <select id="countDraftByBenchmarkId" resultType="int">
@@ -63,8 +66,17 @@
         UPDATE benchmark_version
         SET sample_count = #{sampleCount},
             content_hash = #{contentHash}
-        WHERE id = #{versionId} AND status = 'DRAFT';
+        WHERE id = #{versionId} AND status = 'DRAFT'
+            AND EXISTS(SELECT 1 FROM benchmark b WHERE b.id =benchmark_version.benchmark_id AND b.owner_id = #{userId});
 
     </update>
+
+    <select id="selectOwnedById" resultType="com.evalforge.benchmark.entity.BenchmarkVersion">
+            SELECT V.*
+            FROM benchmark_version v
+            JOIN benchmark b ON b.id =v.benchmark_id
+                WHERE v.id =#{id}
+                  AND b.owner_id = #{userId}
+    </select>
 
 </mapper>

@@ -59,15 +59,16 @@ public class BenchmarkImportService {
 
     //原子导入一个文件的内容，中间失败回退
     @Transactional
-    public BenchmarkImportResponse importJsonl(Long versionId,MultipartFile file){
+    public BenchmarkImportResponse importJsonl(Long userId,Long versionId,MultipartFile file){
 
         log.info(
                 "Starting benchmark sample import ,versionId={}",
                 versionId
         );
 
-        // 1. 查询版本并确认版本存在    
-        BenchmarkVersion version = versionMapper.selectById(versionId);
+        // 1. 查询版本并确认版本存在  
+        BenchmarkVersion version = versionMapper.selectOwnedById(userId, versionId);
+        
         if(version == null) {
             throw new BenchmarkVersionNotFoundException(versionId);
         }
@@ -157,6 +158,7 @@ public class BenchmarkImportService {
 
                 //全部成功后更新sample_count和content_hash
                 int affectedRows = versionMapper.updateImportResult(
+                        userId,
                         versionId,
                         sampleCount,
                         contentHash
@@ -189,7 +191,13 @@ public class BenchmarkImportService {
 
 
     //分页查询样本
-    public PageResponse<BenchmarkSampleResponse> listSamples(Long versionId,int page,int size){
+    public PageResponse<BenchmarkSampleResponse> listSamples(Long userId,Long versionId,int page,int size){
+
+        BenchmarkVersion version = versionMapper.selectOwnedById(userId, versionId);
+        if(version == null){
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Version not found");
+        }
+
         //参数校验
         if(page < 1){
             throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Page number must be greater than 0");
@@ -200,7 +208,7 @@ public class BenchmarkImportService {
 
         int offset =(page-1) * size;
 
-        List<BenchmarkSample> samples=sampleMapper.selectPage(versionId, offset, size);
+        List<BenchmarkSample> samples=sampleMapper.selectPage(userId,versionId, offset, size);
 
         List <BenchmarkSampleResponse> data =samples.stream().map(sample-> new BenchmarkSampleResponse(
                                                                             sample.getId(),
@@ -214,7 +222,7 @@ public class BenchmarkImportService {
         )).toList();
 
 
-        long total =sampleMapper.countByVersionId(versionId);
+        long total =sampleMapper.countByVersionId(userId,versionId);
         return new PageResponse<>(data,total,page,size);
     }   
 

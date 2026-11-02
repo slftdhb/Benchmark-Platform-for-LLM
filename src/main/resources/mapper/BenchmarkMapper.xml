@@ -10,6 +10,7 @@
 
     SELECT
         id,
+        owner_id,
         name,
         description,
         status,
@@ -25,8 +26,8 @@
             parameterType="com.evalforge.benchmark.entity.Benchmark"
             useGeneratedKeys="true"
             keyProperty="id">
-        INSERT INTO benchmark (name,description,status,category)
-        VALUES (#{name},#{description},#{status},#{category})
+        INSERT INTO benchmark (owner_id,name,description,status,category)
+        VALUES (#{ownerId},#{name},#{description},#{status},#{category})
     </insert>
 
     <select id="selectAll" resultType="com.evalforge.benchmark.entity.Benchmark">
@@ -36,6 +37,7 @@
     <select id ="list" resultType="com.evalforge.benchmark.dto.BenchmarkResponse">
         SELECT
             id,
+            owner_id,
             name,
             description,
             status,
@@ -50,27 +52,57 @@
     SET name = #{request.name},
         description = #{request.description},
         status = #{request.status}
-        WHERE id = #{id}
+        WHERE id = #{id} 
+          AND owner_id = #{userId}
     </update>
 
-    <delete id="archive" parameterType="Long">
+    <delete id="archive">
         UPDATE benchmark
         SET status = 'ARCHIVED'
-        WHERE id = #{id}
+        WHERE id = #{id} 
+          AND owner_id = #{userId}
     </delete>
 
     <select id="selectPage" resultType="com.evalforge.benchmark.dto.BenchmarkResponse">
         SELECT
-            id,name,description,status,created_at,updated_at,category
+            id,owner_id,name,description,status,created_at,updated_at,category
             FROM benchmark
+            WHERE owner_id = #{userId}
             ORDER BY created_at DESC,id DESC
             LIMIT #{size} OFFSET #{offset}
     </select>
 
     <select id="count" resultType="Long">
-        SELECT COUNT(*) FROM benchmark;
+        SELECT COUNT(*) FROM benchmark WHERE owner_id = #{userId};
     </select>
 
+    <select id="selectOwnedById" resultType="com.evalforge.benchmark.dto.BenchmarkResponse">
+        SELECT
+            id,
+            owner_id,
+            name,
+            description,
+            status,
+            created_at,
+            updated_at,
+            category
+        FROM benchmark
+        WHERE owner_id = #{userId}
+            AND id = #{id}
+    </select>
 
+    <select id="selectByUserIdForList" resultType="com.evalforge.benchmark.dto.BenchmarkResponse">
+        SELECT
+            id,
+            owner_id,
+            name,
+            description,
+            status,
+            created_at,
+            updated_at,
+            category
+        FROM benchmark
+        WHERE owner_id = #{userId}
+    </select>
 
 </mapper>
