@@ -9,7 +9,16 @@ public class Benchmark{
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String category;    
+    private Long ownerId;
     
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
+    }
+
     public void setDescription(String description) {
         this.description = description;
     }

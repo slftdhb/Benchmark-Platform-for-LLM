@@ -13,19 +13,22 @@ public interface BenchmarkVersionMapper{
     BenchmarkVersion selectById(Long id);
 
     List<BenchmarkVersion> selectByBenchmarkId(
+            Long userId,
             Long benchmarkId
     );
 
     //根据benchmarkID检查是否已有DRAFT存在
     int countDraftByBenchmarkId(@Param("benchmarkId") Long benchmarkId);
 
+    BenchmarkVersion selectOwnedById(@Param("userId") Long userId, @Param("id") Long id);
+
     //查询最大版本号
     Integer selectMaxVersionNoByBenchmarkId(@Param("benchmarkId") Long benchmarkId);
 
     //传递给mybatis参数信息
-    int updateDraftNotes(@Param("id") Long id, @Param("request") UpdateBenchmarkVersionRequest UpdateBenchmarkVersionRequest);
+    int updateDraftNotes(@Param("userId") Long userId, @Param("id") Long id, @Param("request") UpdateBenchmarkVersionRequest UpdateBenchmarkVersionRequest);
 
-    int publishVersion(Long id);
+    int publishVersion(@Param("userId") Long userId, @Param("id") Long id);
 
-    int updateImportResult(@Param("versionId") Long versionId, @Param("sampleCount") int sampleCount, @Param("contentHash") String contentHash);
+    int updateImportResult(@Param("userId") Long userId, @Param("versionId") Long versionId, @Param("sampleCount") int sampleCount, @Param("contentHash") String contentHash);
 }

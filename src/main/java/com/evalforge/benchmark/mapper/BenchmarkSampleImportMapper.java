@@ -17,8 +17,8 @@ public interface BenchmarkSampleImportMapper {
     int insertLine(@Param ("sample") BenchmarkSample sample);
 
     //分页查询
-    List<BenchmarkSample> selectPage(@Param("versionId") Long versionId, @Param("offset") int offset, @Param("size") int size);
+    List<BenchmarkSample> selectPage(@Param("userId") Long userId,@Param("versionId") Long versionId, @Param("offset") int offset, @Param("size") int size);
 
     //统计样本数
-    long countByVersionId(@Param("versionId") Long versionId);
+    long countByVersionId(Long userId,@Param("versionId") Long versionId);
 }

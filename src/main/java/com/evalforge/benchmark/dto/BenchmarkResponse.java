@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public record BenchmarkResponse(
 
         Long id,
+        Long ownerId,
         String name,
         String description,
         String status,

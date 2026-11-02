@@ -28,9 +28,9 @@ public class BenchmarkVersionService {
         //查询最大版本号。计算下一个版本号。插入新的 DRAFT。返回新版本的 ID 或完整响应对象。
         //最后返回创建的草稿版本的id
         @Transactional
-        public Long createDraftVersion(Long id){
+        public Long createDraftVersion(Long userId,Long id){
                 //根据返回的结果检查有没有这个benchmark
-                BenchmarkResponse existBenchmark = benchmarkMapper.selectById(id).orElseThrow(()->{
+                BenchmarkResponse existBenchmark = benchmarkMapper.selectOwnedById(userId, id).orElseThrow(()->{
                         throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Benchmark not found");
                 });
 
@@ -61,8 +61,8 @@ public class BenchmarkVersionService {
 
         //修改草稿信息，根据benchmarkversion的id查，然后修改对应的benchmarkversion的信息
         @Transactional
-        public int updateDraftNotes(Long id, UpdateBenchmarkVersionRequest updateBenchmarkVersionRequest){
-                BenchmarkVersion existingVersion = benchmarkVersionMapper.selectById(id);
+        public int updateDraftNotes(Long userId,Long id, UpdateBenchmarkVersionRequest updateBenchmarkVersionRequest){
+                BenchmarkVersion existingVersion = benchmarkVersionMapper.selectOwnedById(userId, id);
 
                 if (existingVersion == null) {
                         throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND,"Version not found");
@@ -72,14 +72,20 @@ public class BenchmarkVersionService {
                         throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT, "Cannot update a published version");
                 }
                 
-                return benchmarkVersionMapper.updateDraftNotes(id, updateBenchmarkVersionRequest);
+                return benchmarkVersionMapper.updateDraftNotes(userId , id, updateBenchmarkVersionRequest);
         }
 
         //发布版本
         @Transactional
-        public void publishVersion(Long id){
+        public void publishVersion(Long userId,Long id){
 
-                int affected = benchmarkVersionMapper.publishVersion(id);
+                BenchmarkVersion version = benchmarkVersionMapper.selectOwnedById(userId, id);
+                
+                if (version == null) {
+                        throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND,"Version not found");
+                }
+
+                int affected = benchmarkVersionMapper.publishVersion(userId,id);
                 
                 if(affected != 1){
                    throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT,"Benchmark version cannot be published");

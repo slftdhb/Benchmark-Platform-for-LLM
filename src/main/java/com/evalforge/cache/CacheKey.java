@@ -8,8 +8,8 @@ public final class CacheKey {
             return "cache:model:"+id;
         }
 
-        public static String benchmark_create_idempotency_key(String idempotency_key){
-            return "idem:benchmark-create:"+idempotency_key;
+        public static String benchmark_create_idempotency_key(String idempotency_key,Long userId){
+            return "idem:benchmark-create:"+userId+":"+idempotency_key;
         }
 
         public static String modelRateLimit(Long modelId){

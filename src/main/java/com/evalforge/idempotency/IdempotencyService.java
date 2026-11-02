@@ -34,7 +34,7 @@ public class IdempotencyService {
 
             //这里的事务只涉及mysql，redis作为外层事务，未命中缓存时再进入mysql事务
             @Transactional 
-            public Long createBenchmark(CreateBenchmarkRequest request,String idempotencyKey){
+            public Long createBenchmark(Long ownerId,CreateBenchmarkRequest request,String idempotencyKey){
                 //校验Key，计算hash
                 if(idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128 ){
                     throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Idempotency-Key must contain 1 to 128 characters");
@@ -42,7 +42,7 @@ public class IdempotencyService {
 
                 String request_content_hash = hasher.calculateRequestHash(request);
                 
-                IdempotencyRecord record = new IdempotencyRecord("CREATE_BENCHMARK", idempotencyKey, request_content_hash);
+                IdempotencyRecord record = new IdempotencyRecord(ownerId, "CREATE_BENCHMARK", idempotencyKey, request_content_hash);
 
                 try{
                     //插入PROCESSING记录
@@ -53,7 +53,7 @@ public class IdempotencyService {
                     }
                 }catch(DuplicateKeyException ex){
                             //发现已经有idempotencyKey,进行已有记录比对并返回旧id
-                            IdempotencyRecord existedRecord = idempotencyMapper.selectForUpdate("CREATE_BENCHMARK",idempotencyKey);
+                            IdempotencyRecord existedRecord = idempotencyMapper.selectForUpdate(ownerId, "CREATE_BENCHMARK",idempotencyKey);
                             //如果记录查不到
                             if (existedRecord == null) {
                                                         throw new IllegalStateException(
@@ -69,8 +69,8 @@ public class IdempotencyService {
 
                 }
                 //插入成功
-                Long resource_id = benchmarkService.create(request);
-                int affectedRows = idempotencyMapper.markSucceeded(resource_id, "CREATE_BENCHMARK", idempotencyKey);
+                Long resource_id = benchmarkService.create(ownerId,request);
+                int affectedRows = idempotencyMapper.markSucceeded(ownerId,resource_id, "CREATE_BENCHMARK", idempotencyKey);
                 //这里需要判断插入成功与否，否则没插入成功，事务提交，会显示benchmark已经创建，但是幂等记录仍然在PROCESSING
                 if(affectedRows != 1){
                         throw new IllegalStateException("Failed to complete idempotency record");
