@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.evalforge.evaluation.mapper.EvaluationTaskMapper">
+
+        <insert id = "createTask">
+            INSERT INTO evaluation_task (job_id,batch_no,status,start_sample_id,end_sample_id)
+            VALUES (#{task.jobId},#{task.batchNo},#{task.status},#{task.startSampleId},#{task.endSampleId})
+        </insert>
+
+        <select id = "getTaskById" resultType="com.evalforge.evaluation.dto.EvaluationTaskResponse">
+            SELECT * FROM evaluation_task WHERE id = #{taskId}
+        </select>
+
+        <select id = "getTasksByJobId" resultType="com.evalforge.evaluation.dto.EvaluationTaskResponse">
+            SELECT * FROM evaluation_task WHERE job_id = #{jobId}
+        </select>
+
+        <update id = "updateTaskStatusById">
+            UPDATE evaluation_task
+            SET status = #{status}
+            WHERE id = #{taskId}
+        </update>
+
+        <update id = "cancelTasksById">
+            UPDATE evaluation_task
+                SET finished_at = CASE
+                    WHEN status = 'PENDING' THEN NOW()
+                    ELSE finished_at
+                END,
+                    status = CASE
+                    WHEN status = 'PENDING' THEN 'CANCELLED'
+                    WHEN status = 'RUNNING' THEN 'CANCELLING'
+                    ELSE status
+                END
+            WHERE id = #{taskId}
+        </update>
+</mapper>

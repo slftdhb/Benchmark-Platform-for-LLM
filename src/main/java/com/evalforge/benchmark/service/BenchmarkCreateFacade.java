@@ -59,7 +59,7 @@ public class BenchmarkCreateFacade {
             try{
                     redis.put(ownerId,idempotencyKey,new IdempotencyCacheEntry(hash,id));
             }catch(DataAccessException  | JacksonException ex){
-                    log.warn("fialed to populate idempotency chache ,resource = {}",id, ex);
+                    log.warn("fialed to populate idempotency cache ,resource = {}",id, ex);
             }
             
             return id;

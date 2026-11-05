@@ -21,4 +21,6 @@ public interface BenchmarkSampleImportMapper {
 
     //统计样本数
     long countByVersionId(Long userId,@Param("versionId") Long versionId);
+
+    List<BenchmarkSample> selectAllByUserIdAndVersionId(@Param("userId") Long userId, @Param("versionId") Long versionId);
 }

@@ -48,4 +48,12 @@
                 AND EXISTS (SELECT 1 FROM benchmark_version v JOIN benchmark b ON b.id = v.benchmark_id WHERE v.id = benchmark_sample.version_id AND b.owner_id = #{userId})
     </select>
 
+    <select id ="selectAllByUserIdAndVersionId" resultType="com.evalforge.benchmark.entity.BenchmarkSample" >
+        SELECT id,version_id,sample_key,input_json,gold_json,metadata_json,line_no,created_at
+        FROM benchmark_sample
+        WHERE version_id = #{versionId}
+            AND EXISTS (SELECT 1 FROM benchmark_version v JOIN benchmark b ON b.id = v.benchmark_id WHERE v.id = benchmark_sample.version_id AND b.owner_id = #{userId})
+        ORDER BY line_no ASC,id ASC
+    </select>
+
 </mapper>

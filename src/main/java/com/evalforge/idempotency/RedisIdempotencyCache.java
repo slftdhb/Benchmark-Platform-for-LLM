@@ -45,5 +45,26 @@ public class RedisIdempotencyCache {
                 redisEntry,
                 Duration.ofMinutes(30)
             );
+    }  
+
+    public IdempotencyCacheEntry getJob(Long userId,String key){
+        String entry = redisTemplate.opsForValue().get(CacheKey.evaluationJobCreate(userId, key));
+        if(entry == null){
+            return null;
+        }
+        IdempotencyCacheEntry result = objectMapper.readValue(entry, IdempotencyCacheEntry.class);
+        if(result == null || result.requestHash() == null || result.resourceId() == null || result.requestHash().isBlank()){
+            return null;
+        }
+        return result;
+    }
+
+    public void putJob(Long userId,String key,IdempotencyCacheEntry entry){
+        String redisEntry = objectMapper.writeValueAsString(entry);
+        redisTemplate.opsForValue().set(
+            CacheKey.evaluationJobCreate(userId, key),
+            redisEntry,
+            Duration.ofMinutes(30)
+        );
     }
 }

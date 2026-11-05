@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace = "com.evalforge.evaluation.mapper.EvaluationJobMapper">
+        <insert id = "createJob" 
+                useGeneratedKeys="true" 
+                keyProperty="job.id">
+                INSERT INTO evaluation_job (job_name,owner_id,model_endpoint_id,benchmark_version_id,request_id,config_json)
+                VALUES (#{job.jobName}, #{job.ownerId}, #{job.modelEndpointId}, #{job.benchmarkVersionId}, #{job.requestId}, #{job.configJson})
+        </insert>
+
+        <select id = "getJobById" resultType="com.evalforge.evaluation.entity.EvaluationJob">
+            SELECT * FROM evaluation_job WHERE owner_id = #{userId} AND id = #{jobId}
+        </select>
+
+        <select id = "getJobsByUserId" resultType="com.evalforge.evaluation.entity.EvaluationJob">
+            SELECT * FROM evaluation_job WHERE owner_id = #{userId}
+        </select>
+        
+        <update id ="cancelJob">
+            UPDATE evaluation_job
+            SET finished_at = CASE
+                WHEN status = 'PENDING' THEN NOW()
+                ElSE finished_at
+                END,
+                status = CASE
+                WHEN status = 'PENDING' THEN 'CANCELLED'
+                WHEN status = 'RUNNING' THEN 'CANCELLING'
+                ELSE status
+            END
+            WHERE owner_id = #{userId} AND id = #{jobId}
+            AND status IN('PENDING', 'RUNNING');
+        </update>
+
+</mapper>

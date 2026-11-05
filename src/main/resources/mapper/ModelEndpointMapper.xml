@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.mapper.ModelEndpointMapper">
+
+    <resultMap id="modelEndpointResponseMap" type="com.evalforge.dto.ModelEndpointResponse">
+        <constructor>
+            <idArg column="id" javaType="java.lang.Long"/>
+            <arg column="enabled" javaType="java.lang.Boolean"/>
+            <arg column="name" javaType="java.lang.String"/>
+            <arg column="provider" javaType="java.lang.String"/>
+            <arg column="model_name" javaType="java.lang.String"/>
+            <arg column="base_url" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="responseColumns">
+        id, enabled, name, provider, model_name, base_url
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO model_endpoint (name, provider, base_url, model_name)
+        VALUES (#{request.name}, #{request.provider}, #{request.base_url}, #{request.model_name})
+    </insert>
+
+    <select id="findById" resultMap="modelEndpointResponseMap">
+        SELECT <include refid="responseColumns"/>
+        FROM model_endpoint
+        WHERE id = #{id}
+    </select>
+
+    <update id="update">
+        UPDATE model_endpoint
+        SET enabled = #{request.enabled},
+            name = #{request.name},
+            provider = #{request.provider},
+            base_url = #{request.base_url},
+            model_name = #{request.model_name}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findAll" resultMap="modelEndpointResponseMap">
+        SELECT <include refid="responseColumns"/>
+        FROM model_endpoint
+    </select>
+
+    <delete id="delete">
+        DELETE FROM model_endpoint WHERE id = #{id}
+    </delete>
+
+</mapper>
