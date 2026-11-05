@@ -14,6 +14,9 @@ import com.evalforge.benchmark.service.BenchmarkService;
 import com.evalforge.common.error.BusinessException;
 import com.evalforge.common.error.ErrorCode;
 import com.evalforge.common.hasher.BenchmarkCreateRequestHasher;
+import com.evalforge.common.hasher.EvaluationJobCreateRequestHasher;
+import com.evalforge.evaluation.dto.CreateEvaluationJobRequest;
+import com.evalforge.evaluation.service.EvaluationJobService;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -24,12 +27,18 @@ public class IdempotencyService {
             private final ObjectMapper objectMapper;
             private final BenchmarkService benchmarkService;
             private final BenchmarkCreateRequestHasher hasher;
+            private final EvaluationJobCreateRequestHasher evaluationJobHasher;
+            private final EvaluationJobService jobService;
 
-            public IdempotencyService(IdempotencyMapper idempotencyMapper,ObjectMapper objectMapper,BenchmarkService benchmarkService,BenchmarkCreateRequestHasher hasher){
+            public IdempotencyService(IdempotencyMapper idempotencyMapper,ObjectMapper objectMapper,BenchmarkService benchmarkService,
+                BenchmarkCreateRequestHasher hasher,EvaluationJobCreateRequestHasher evaluationJobHasher,
+            EvaluationJobService jobService){
                 this.idempotencyMapper=idempotencyMapper;
                 this.objectMapper = objectMapper;
                 this.benchmarkService=benchmarkService;
                 this.hasher=hasher;
+                this.evaluationJobHasher=evaluationJobHasher;
+                this.jobService=jobService;
             }
 
             //这里的事务只涉及mysql，redis作为外层事务，未命中缓存时再进入mysql事务
@@ -79,6 +88,42 @@ public class IdempotencyService {
                 return resource_id;
             }
 
+            //这里的resourceId来标识请求任务的requestId
+            @Transactional
+            public Long createEvaluationJob(Long ownerId,CreateEvaluationJobRequest request,String idempotencyKey){
+                //校验Key，计算hash
+                if(idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128 ){
+                    throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Idempotency-Key must contain 1 to 128 characters");
+                }
 
-    
+                //用user_id和requestId来表示请求，不再去计算具体内容的hash
+                String request_hash = evaluationJobHasher.calculateRequestHash(request);
+                
+                //查询已有记录
+                IdempotencyRecord record = new IdempotencyRecord(ownerId,"CREATE_EVALUATION_JOB",idempotencyKey,request_hash);
+                try{
+                    int affectedRows = idempotencyMapper.insertProcessing(record);
+                    if(affectedRows != 1){
+                            throw new IllegalStateException("Failed to insert idempotency record");
+                    }
+                }catch(DuplicateKeyException ex){
+                    IdempotencyRecord existedRecord = idempotencyMapper.selectForUpdate(ownerId, "CREATE_EVALUATION_JOB", idempotencyKey);
+                    if(existedRecord == null){
+                            throw new IllegalStateException("IdempotencyKey record disppeared");
+                    }
+                        if(request_hash.equals(existedRecord.requestHash())){
+                                if(existedRecord.status().equals("SUCCEED")){
+                                    return existedRecord.resourceId();
+                                }
+                        }
+                        throw new BusinessException(ErrorCode.IDEMPOTENCY_KEY_CONFLICT, "Idempotency-Key was already used with different parameters");
+                }
+                Long resourceId = jobService.createEvaluationJob(ownerId, request, idempotencyKey);
+                int affectedRows = idempotencyMapper.markSucceeded(ownerId,resourceId, "CREATE_EVALUATION_JOB", idempotencyKey);
+                if(affectedRows != 1){
+                        throw new IllegalStateException("Failed to complete idempotency record");
+                }
+
+                return resourceId;
+            }
 }

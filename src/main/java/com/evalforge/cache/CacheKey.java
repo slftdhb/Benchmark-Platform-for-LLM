@@ -15,5 +15,8 @@ public final class CacheKey {
         public static String modelRateLimit(Long modelId){
             return "rate:model:"+modelId;
         }
-        
+
+        public static String evaluationJobCreate(Long userId,String idempotencyKey){
+            return "idem:evaluation-job-create:"+userId+":"+idempotencyKey;
+        }
 }
