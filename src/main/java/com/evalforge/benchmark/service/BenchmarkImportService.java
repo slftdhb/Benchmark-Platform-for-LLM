@@ -13,6 +13,10 @@ import com.evalforge.benchmark.mapper.BenchmarkSampleImportMapper;
 import com.evalforge.benchmark.mapper.BenchmarkVersionMapper;
 import com.evalforge.common.error.BusinessException;
 import com.evalforge.common.error.ErrorCode;
+import com.evalforge.storage.entity.StoredObject;
+import com.evalforge.storage.enums.StorageStatus;
+import com.evalforge.storage.service.S3StorageService;
+import com.evalforge.storage.service.StoredObjectService;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -47,19 +51,21 @@ public class BenchmarkImportService {
     private final BenchmarkVersionMapper versionMapper;
     private final BenchmarkSampleImportMapper sampleMapper;
     private final ObjectMapper objectMapper;
+    private final StoredObjectService storedService;
 
     private static final Logger log =LoggerFactory.getLogger(BenchmarkImportService.class);
 
     //依赖注入
-    public BenchmarkImportService(BenchmarkVersionMapper versionMapper, BenchmarkSampleImportMapper sampleMapper,ObjectMapper objectMapper){
+    public BenchmarkImportService(BenchmarkVersionMapper versionMapper, BenchmarkSampleImportMapper sampleMapper,ObjectMapper objectMapper,StoredObjectService storedService){
         this.versionMapper = versionMapper;
         this.sampleMapper = sampleMapper;
         this.objectMapper=objectMapper;
+        this.storedService = storedService;
     }
 
     //原子导入一个文件的内容，中间失败回退
     @Transactional
-    public BenchmarkImportResponse importJsonl(Long userId,Long versionId,MultipartFile file){
+    public BenchmarkImportResponse importJsonl(Long userId,Long versionId,MultipartFile file,Long storedObjectId){
 
         log.info(
                 "Starting benchmark sample import ,versionId={}",
@@ -153,8 +159,12 @@ public class BenchmarkImportService {
                 //    batch.clear();
                 //}   
 
-                //装成字符串
+                //转成字符串
                 String contentHash = HexFormat.of().formatHex(digest.digest());
+
+                //存储的stored_object的状态更新
+                storedService.markReady(storedObjectId, contentHash);
+                
 
                 //全部成功后更新sample_count和content_hash
                 int affectedRows = versionMapper.updateImportResult(

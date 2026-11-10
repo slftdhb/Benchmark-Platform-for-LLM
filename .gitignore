@@ -46,3 +46,5 @@ jacoco.exec
 # Runtime data
 data/
 uploads/
+
+minio-data/

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.storage.mapper.StorageMapper">
+
+        <insert id="insert" parameterType="com.evalforge.storage.entity.StoredObject"
+                 useGeneratedKeys="true" keyProperty="storedObject.id">
+                INSERT INTO stored_object
+                (owner_id,bucket_name,object_key,object_type,related_resource_id,original_filename,content_type,size_bytes,sha256,status)
+                VALUES (#{storedObject.ownerId}, #{storedObject.bucketName}, #{storedObject.objectKey}, #{storedObject.objectType}, #{storedObject.relatedResourceId}, #{storedObject.originalFilename}, #{storedObject.contentType}, #{storedObject.sizeBytes}, #{storedObject.sha256}, #{storedObject.status})
+        </insert>
+
+        <update id="updateStatus">
+                UPDATE stored_object
+                SET status = #{status}
+                WHERE id = #{id}
+        </update>
+
+        <update id="updateSha256">
+                UPDATE stored_object
+                SET sha256 = #{sha256}
+                WHERE id = #{id}
+        </update>
+
+        <update id="updateStatusAndSha256">
+                UPDATE stored_object
+                SET status = #{status},
+                    sha256 = #{sha256}
+                WHERE id = #{id}
+        </update>
+
+        <update id="updateStatusAndError">
+                UPDATE stored_object
+                SET status = #{status},
+                    error_message = #{errorMessage}
+                WHERE id = #{id}
+        </update>
+
+        <select id="selectById" resultType="com.evalforge.storage.entity.StoredObject">
+                SELECT *
+                FROM stored_object
+                WHERE id = #{id}
+        </select>
+
+        <select id="selectReadyByResource" resultType="com.evalforge.storage.entity.StoredObject">
+                SELECT *
+                FROM stored_object
+                WHERE owner_id = #{ownerId}
+                  AND object_type = #{objectType}
+                  AND related_resource_id = #{relatedResourceId}
+                  AND status = 'READY'
+                ORDER BY id DESC LIMIT 1
+        </select>
+
+        <delete id="delete">
+                DELETE FROM stored_object
+                WHERE id = #{id}
+        </delete>
+</mapper>   

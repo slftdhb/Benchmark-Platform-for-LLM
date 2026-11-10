@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.evalforge.benchmark.dto.BenchmarkImportResponse;
 import com.evalforge.benchmark.dto.BenchmarkSampleResponse;
 import com.evalforge.benchmark.dto.PageResponse;
+import com.evalforge.benchmark.service.BenchmarkImportOrchestator;
 import com.evalforge.benchmark.service.BenchmarkImportService;
 import com.evalforge.security.CurrentUser;
 
@@ -29,9 +30,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("api/v1")
 public class BenchmarkImportController {
     
+    private final BenchmarkImportOrchestator benchmarkImportOrchestator;
     private final BenchmarkImportService benchmarkImportService;
+        
     
-    public BenchmarkImportController(BenchmarkImportService benchmarkImportService) {
+    public BenchmarkImportController(BenchmarkImportOrchestator benchmarkImportOrchestator,
+                                     BenchmarkImportService benchmarkImportService) {
+        this.benchmarkImportOrchestator = benchmarkImportOrchestator;
         this.benchmarkImportService = benchmarkImportService;
     }
 
@@ -53,7 +58,7 @@ public class BenchmarkImportController {
         @AuthenticationPrincipal CurrentUser currentUser
     ){
         Long userId = currentUser.id();
-        return benchmarkImportService.importJsonl(userId, versionId, file);
+        return benchmarkImportOrchestator.importFile(userId, versionId, file);
     }
 
     @Operation (
