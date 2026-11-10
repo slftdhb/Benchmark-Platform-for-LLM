@@ -14,7 +14,8 @@ public enum ErrorCode {
             TOKEN_INVALID(HttpStatus.UNAUTHORIZED),
             AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED),
             ACCESS_DENIED(HttpStatus.FORBIDDEN),
-            ACCOUNT_DISABLED(HttpStatus.FORBIDDEN);
+            ACCOUNT_DISABLED(HttpStatus.FORBIDDEN),
+            STORAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR);
 
             private final HttpStatus status;
 
