@@ -90,7 +90,6 @@ public class BenchmarkImportOrchestator {
                 }catch(Exception e){
                     //上传失败后标记失败,这里也要删除的原因是在上传过程中可能已经上传了部分文件，只标记失败，也可能存在部分鼓励对象
                     safeDelete(storedObject);
-                    storedObjectService.markFailed(storedObject.getId(), "S3 upload failed");
                     throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED, "Failed to upload source file",Map.of("versionId",versionId),e);
                 }
 
@@ -123,6 +122,8 @@ public class BenchmarkImportOrchestator {
                     //完成删除后再删除元数据
                 }catch(Exception e){
                     log.warn("fail to delete S3 source file key={} ", storedObject.getObjectKey(), e);
+                    //不进入后续的markFailed，只有删除成功才markfailed
+                    return ;
                 }
 
                 try{
