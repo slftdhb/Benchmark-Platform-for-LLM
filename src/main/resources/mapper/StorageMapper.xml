@@ -58,4 +58,11 @@
                 DELETE FROM stored_object
                 WHERE id = #{id}
         </delete>
+
+
+        <update id="updateStatusForCleanUp">
+                UPDATE stored_object
+                SET status = 'CLEANUP_PENDING'
+                WHERE id = #{id} AND status IN ('PENDING', 'FAILED','CLEANUP_PENDING')
+        </update>
 </mapper>   

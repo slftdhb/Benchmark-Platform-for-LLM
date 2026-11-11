@@ -48,4 +48,11 @@ public class StoredObjectService {
             storageMapper.delete(id);
         }
 
+        public void markCleanupPending(Long id) {
+                int affectedRows = storageMapper.updateStatusForCleanUp(id);
+                if (affectedRows != 1) {
+                    throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED,
+                            "Failed to mark stored object CLEANUP_PENDING");
+                }
+        }
 }

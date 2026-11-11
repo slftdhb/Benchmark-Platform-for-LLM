@@ -26,15 +26,16 @@ import com.evalforge.storage.enums.StorageType;
 
 @Service 
 public class BenchmarkImportOrchestator {   
+
             private final BenchmarkVersionMapper versionMapper;
-            private final S3StorageService storageService;
+            private final StorageService storageService;
             private final BenchmarkImportService benchmarkImportService;
             private final StoredObjectService storedObjectService;
             private final S3Properties props;
 
             private final static Logger log = LoggerFactory.getLogger(BenchmarkImportOrchestator.class);
 
-            public BenchmarkImportOrchestator(BenchmarkVersionMapper versionMapper, S3StorageService storageService, BenchmarkImportService benchmarkImportService, StoredObjectService storedObjectService, S3Properties props) {
+            public BenchmarkImportOrchestator(BenchmarkVersionMapper versionMapper, StorageService storageService, BenchmarkImportService benchmarkImportService, StoredObjectService storedObjectService, S3Properties props) {
                 this.versionMapper = versionMapper;
                 this.storageService = storageService;
                 this.benchmarkImportService = benchmarkImportService;
@@ -87,6 +88,8 @@ public class BenchmarkImportOrchestator {
                 try(InputStream in = file.getInputStream()){
                     storageService.uploadFile(props.benchmarkBucket(), ObjectKey, in, file.getSize(), contentType);
                 }catch(Exception e){
+                    //上传失败后标记失败,这里也要删除的原因是在上传过程中可能已经上传了部分文件，只标记失败，也可能存在部分鼓励对象
+                    safeDelete(storedObject);
                     storedObjectService.markFailed(storedObject.getId(), "S3 upload failed");
                     throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED, "Failed to upload source file",Map.of("versionId",versionId),e);
                 }
@@ -104,17 +107,29 @@ public class BenchmarkImportOrchestator {
 
             }
 
-
+            //用来安全删除两个系统中的对应对象
             private void safeDelete(StoredObject storedObject) {
+                
+                try{
+                //标记成待删除, 状态为CLEANUP_PENDING 
+                storedObjectService.markCleanupPending(storedObject.getId());
+                }catch(Exception e){
+                    log.warn("fail to mark stored object for cleanup id={} ", storedObject.getId(), e);
+                }
+
+                //对于要删除的对象应该在数据库中加入待删除的状态
                 try{
                     storageService.delete(storedObject.getBucketName(), storedObject.getObjectKey());
+                    //完成删除后再删除元数据
                 }catch(Exception e){
                     log.warn("fail to delete S3 source file key={} ", storedObject.getObjectKey(), e);
                 }
+
                 try{
-                    storedObjectService.delete(storedObject.getId());
+                    storedObjectService.markFailed(storedObject.getId(), "upload roll back and removed source file");
                 }catch(Exception e){
-                    log.warn("fail to delete stored object record id={} ", storedObject.getId(), e);
+                    log.warn("fail to mark stored object as failed id={} ", storedObject.getId(), e);
                 }
+
             }
 }   

@@ -30,4 +30,6 @@ public interface StorageMapper {
                                        @Param("relatedResourceId") Long relatedResourceId);
 
         void delete(@Param("id") Long id);
+
+        int updateStatusForCleanUp(@Param("id") Long id);
 }

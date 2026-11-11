@@ -161,9 +161,6 @@ public class BenchmarkImportService {
 
                 //转成字符串
                 String contentHash = HexFormat.of().formatHex(digest.digest());
-
-                //存储的stored_object的状态更新
-                storedService.markReady(storedObjectId, contentHash);
                 
 
                 //全部成功后更新sample_count和content_hash
@@ -177,6 +174,9 @@ public class BenchmarkImportService {
                 if(affectedRows != 1){
                         throw new BusinessException(ErrorCode.BENCHMARK_VERSION_CONFLICT, "Version status changed during import");
                 }  
+                
+                //存储的stored_object的状态更新,完成数据库中事务后更改为ready
+                storedService.markReady(storedObjectId, contentHash);
 
                 log.info(
                     "Benchmark sample import completed ,versionId={},count={}",

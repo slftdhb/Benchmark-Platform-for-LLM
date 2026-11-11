@@ -3,7 +3,8 @@ package com.evalforge.storage.enums;
 public enum StorageStatus {
     PENDING("PENDING"),
     READY("READY"),
-    FAILED("FAILED");
+    FAILED("FAILED"),
+    CLEANUP_PENDING("CLEANUP_PENDING");
 
     private final String value;
 
