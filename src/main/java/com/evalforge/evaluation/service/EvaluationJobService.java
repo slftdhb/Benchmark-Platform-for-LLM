@@ -2,7 +2,9 @@ package com.evalforge.evaluation.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.evalforge.benchmark.entity.BenchmarkSample;
@@ -24,6 +26,8 @@ import com.evalforge.evaluation.mapper.EvaluationJobMapper;
 import com.evalforge.evaluation.mapper.EvaluationTaskMapper;
 import com.evalforge.idempotency.IdempotencyMapper;
 import com.evalforge.mapper.ModelEndpointMapper;
+import com.evalforge.messaging.dto.TaskDispatchMessage;
+import com.evalforge.messaging.outbox.service.OutboxService;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -38,12 +42,14 @@ public class EvaluationJobService {
             private final BenchmarkSampleImportMapper sampleMapper;
             private final EvaluationTaskService taskService;
             private final ObjectMapper objectMapper;
+            private final OutboxService outboxService;
 
             
 
             public EvaluationJobService(BenchmarkMapper benchmarkMapper, BenchmarkVersionMapper versionMapper, 
                 IdempotencyMapper idempotencyMapper, EvaluationJobMapper evaluationJobMapper, ModelEndpointMapper modelMapper,
-                BenchmarkSampleImportMapper sampleMapper,EvaluationTaskService taskService,ObjectMapper objectMapper
+                BenchmarkSampleImportMapper sampleMapper,EvaluationTaskService taskService,ObjectMapper objectMapper,
+                OutboxService outboxService
             ) {
                 
                 this.benchmarkMapper = benchmarkMapper;
@@ -54,6 +60,7 @@ public class EvaluationJobService {
                 this.sampleMapper = sampleMapper;
                 this.taskService = taskService;
                 this.objectMapper = objectMapper;
+                this.outboxService = outboxService;
             }
             
             //*
@@ -120,13 +127,27 @@ public class EvaluationJobService {
                                             request.batchSize()
 
                         );
-                        boolean createTasksFlag = taskService.createTask(taskRequest);
+                        List<Long> taskIds = taskService.createTask(taskRequest);
 
-                        if(!createTasksFlag) {
+                        if(taskIds.isEmpty()) {
                             throw new BusinessException(ErrorCode.INTERNAL_ERROR, "failed to create evaluation tasks");
                         }
+                        
+                        //在这里将task写入outbox的数据库,使用spring的transactional保证task和outbox数据的一致性
+                        for(Long taskId : taskIds) {
+                                TaskDispatchMessage message = new TaskDispatchMessage(
+                                        1,
+                                        UUID.randomUUID().toString(),
+                                        job.getId(),
+                                        taskId,
+                                        Instant.now()
+                                );
 
-                        //保存幂等结果
+                                int affected = outboxService.insertPending(message);
+                                if(affected != 1) {
+                                        throw new BusinessException(ErrorCode.INTERNAL_ERROR, "failed to insert outbox event");
+                                }
+                        }
 
                 return job.getId(); // 临时返回null，实际应返回创建的Job_id
             }

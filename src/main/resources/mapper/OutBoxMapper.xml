@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.evalforge.messaging.outbox.mapper.OutboxMapper">
+
+    <insert id="insertPending" parameterType="com.evalforge.messaging.outbox.entity.OutboxEvent">
+        INSERT INTO outbox_event (
+            event_id,
+            event_type,
+            aggregate_id,
+            aggregate_type,
+            topic_name,
+            message_key,
+            payload_json
+        ) VALUES (
+            #{event.eventId},
+            #{event.eventType},
+            #{event.aggregateId},
+            #{event.aggregateType},
+            #{event.topicName},
+            #{event.messageKey},
+            #{event.payloadJson}
+        )
+    </insert>
+
+    <select id="findDue" resultType="com.evalforge.messaging.outbox.entity.OutboxEvent">
+        SELECT *
+        FROM outbox_event
+        WHERE (status = 'PENDING' AND available_at &lt;= NOW(3))
+            OR (status = 'PROCESSING' AND locked_until &lt;= NOW(3))
+        ORDER BY available_at, id ASC
+        LIMIT #{limit}
+    </select>
+    
+    <update id="claim">
+        UPDATE outbox_event
+        SET status = 'PROCESSING',
+            locked_by = #{lockedBy},
+            locked_until = #{lockedUntil},
+            attempts = attempts + 1
+        WHERE id = #{id}
+             AND(
+               (status = 'PENDING' AND available_at &lt;= NOW(3))
+                OR 
+                (status = 'PROCESSING' AND locked_until &lt;= NOW(3))
+            )
+    </update>
+
+    <update id="markPublished">
+        UPDATE outbox_event
+        SET status = 'PUBLISHED',
+            published_at = #{publishedAt},
+            locked_by = NULL,
+            locked_until = NULL,
+            last_error = NULL
+        WHERE id = #{id}
+            AND status = 'PROCESSING'
+    </update>
+
+    <update id="markFailure">
+        UPDATE outbox_event
+        SET status = CASE
+                WHEN attempts &gt;= #{maxAttempts} THEN 'DEAD'
+                ELSE 'PENDING'
+            END,
+            available_at = #{availableAt},
+            last_error = #{lastError},
+            locked_by = NULL,
+            locked_until = NULL
+        WHERE id = #{id}
+            AND status = 'PROCESSING'
+    </update>
+
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*)
+        FROM outbox_event
+        WHERE status = #{status}
+    </select>
+</mapper>
