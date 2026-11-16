@@ -1,5 +1,6 @@
 package com.evalforge.evaluation.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -22,32 +23,38 @@ public class EvaluationTaskService {
                 this.evaluationTaskMapper = evaluationTaskMapper;
         }
 
-            //创建task
+            //创建task,获取创建的TaskId集合
             @Transactional 
-            public boolean createTask(CreateEvaluationTaskRequest taskRequest) {
+            public List<Long> createTask(CreateEvaluationTaskRequest taskRequest) {
+                    List<Long> taskIds = new ArrayList<>();
                     if(taskRequest.samples().isEmpty()) {
-                            return false;
+                            return taskIds;
                     }
 
                     int taskGroup = taskRequest.samples().size() / taskRequest.batchSize();
 
-                    //Service默认是单例模式，如果把task作为类私有对象，在多请求下会导致task数据被不同job覆盖
-                    EvaluationTask task = new EvaluationTask();
+
                     //batchNo从1开始算
                     for(int i = 0 ; i < taskGroup ; i++) {
+                        //Service默认是单例模式，如果把task作为类私有对象，在多请求下会导致task数据被不同job覆盖
+                        //把对象放进循环里，避免多请求下数据被覆盖
+                        EvaluationTask task = new EvaluationTask();
                             task.setJobId(taskRequest.jobId());    
                             task.setBatchNo(i+1);
                             task.setStatus(TaskStatus.PENDING.name());
                             task.setStartSampleId(taskRequest.samples().get(i*taskRequest.batchSize()).getId());
                             task.setEndSampleId(taskRequest.samples().get((i+1)*taskRequest.batchSize() - 1).getId());
                             int affectedRows = evaluationTaskMapper.createTask(task);
-                            if(affectedRows != 1){
+
+                            if(affectedRows != 1 || task.getId() == null){
                                 throw new BusinessException(ErrorCode.INTERNAL_ERROR, "failed to create evaluation task");
                             }
+                            taskIds.add(task.getId());
                     }
                     //还有未处理的部分，作为一个batch
                     if(taskRequest.samples().size() % taskRequest.batchSize() != 0) {
                             int i = taskGroup;
+                            EvaluationTask task = new EvaluationTask();
                             task.setJobId(taskRequest.jobId());    
                             task.setBatchNo(i+1);
                             task.setStatus(TaskStatus.PENDING.name());
@@ -55,11 +62,12 @@ public class EvaluationTaskService {
                             task.setEndSampleId(taskRequest.samples().get(taskRequest.samples().size() - 1).getId());
 
                             int affectedRows = evaluationTaskMapper.createTask(task);
-                            if(affectedRows != 1){
+                            if(affectedRows != 1 || task.getId() == null){
                                 throw new BusinessException(ErrorCode.INTERNAL_ERROR, "failed to create evaluation task");
                             }
+                            taskIds.add(task.getId());
                     }
-                    return true;
+                    return taskIds;
             }
 
 
