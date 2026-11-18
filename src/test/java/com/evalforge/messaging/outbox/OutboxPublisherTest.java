@@ -139,6 +139,7 @@ class OutboxPublisherTest {
         return jdbc.queryForObject(
                 "SELECT id FROM outbox_event WHERE event_id = ?",
                 Long.class, eventId);
+                
     }
 
     private Map<String, Object> rowOf(String eventId) {
