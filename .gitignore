@@ -48,3 +48,5 @@ data/
 uploads/
 
 minio-data/
+
+./dsh-acl-repair
